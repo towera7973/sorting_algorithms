@@ -1,85 +1,83 @@
 #include "sort.h"
-#include <stdlib.h>
+#include <stdio.h>
 
 /**
- * pow_10 - calculates a positive power of 10
- * @power: power of 10 to calculate
+ * bitonic_compare - sort the values in a sub-array with respect to
+ * the Bitonic sort algorithm
+ * @up: direction of sorting
+ * @array: sub-array to sort
+ * @size: size of the sub-array
  *
- * Return: the corresponding power of 10
+ * Return: void
  */
-unsigned int pow_10(unsigned int power)
+void bitonic_compare(char up, int *array, size_t size)
 {
-	unsigned int i, result;
+	size_t i, dist;
+	int swap;
 
-	result = 1;
-	for (i = 0; i < power; i++)
-		result *= 10;
-	return (result);
+	dist = size / 2;
+	for (i = 0; i < dist; i++)
+	{
+		if ((array[i] > array[i + dist]) == up)
+		{
+			swap = array[i];
+			array[i] = array[i + dist];
+			array[i + dist] = swap;
+		}
+	}
 }
 
 /**
- * count_sort - sorts an array of integers in ascending order at a specific
- * digit location using the Counting sort algorithm
- * @array: array to sort
- * @size: size of the array to sort
- * @digit: digit to sort by
+ * bitonic_merge - recursive function that merges two sub-arrays
+ * @up: direction of sorting
+ * @array: sub-array to sort
+ * @size: size of the sub-array
  *
- * Return: 1 if there is a need to keep sorting, 0 if not
+ * Return: void
  */
-unsigned int count_sort(int *array, size_t size, unsigned int digit)
+void bitonic_merge(char up, int *array, size_t size)
 {
-	int i, count[10] = {0};
-	int *copy = NULL;
-	size_t j, temp, total = 0;
-	unsigned int dp1, dp2, sort = 0;
-
-	dp2 = pow_10(digit - 1);
-	dp1 = dp2 * 10;
-	copy = malloc(sizeof(int) * size);
-	if (copy == NULL)
-		exit(1);
-	for (j = 0; j < size; j++)
-	{
-		copy[j] = array[j];
-		if (array[j] / dp1 != 0)
-			sort = 1;
-	}
-	for (i = 0; i < 10 ; i++)
-		count[i] = 0;
-	for (j = 0; j < size; j++)
-		count[(array[j] % dp1) / dp2] += 1;
-	for (i = 0; i < 10; i++)
-	{
-		temp = count[i];
-		count[i] = total;
-		total += temp;
-	}
-	for (j = 0; j < size; j++)
-	{
-		array[count[(copy[j] % dp1) / dp2]] = copy[j];
-		count[(copy[j] % dp1) / dp2] += 1;
-	}
-	free(copy);
-	return (sort);
+	if (size < 2)
+		return;
+	bitonic_compare(up, array, size);
+	bitonic_merge(up, array, size / 2);
+	bitonic_merge(up, array + (size / 2), size / 2);
 }
 
 /**
- * radix_sort - sorts an array of integers in ascending order using
- * the Radix sort algorithm
+ * bit_sort - recursive function using the Bitonic sort algorithm
+ * @up: direction of sorting
+ * @array: sub-array to sort
+ * @size: size of the sub-array
+ * @t: total size of the original array
+ *
+ * Return: void
+ */
+void bit_sort(char up, int *array, size_t size, size_t t)
+{
+	if (size < 2)
+		return;
+	printf("Merging [%lu/%lu] (%s):\n", size, t, (up == 1) ? "UP" : "DOWN");
+	print_array(array, size);
+	bit_sort(1, array, size / 2, t);
+	bit_sort(0, array + (size / 2), size / 2, t);
+	bitonic_merge(up, array, size);
+	printf("Result [%lu/%lu] (%s):\n", size, t, (up == 1) ? "UP" : "DOWN");
+	print_array(array, size);
+
+}
+
+/**
+ * bitonic_sort - sorts an array of integers in ascending order using
+ * the Bitonic sort algorithm
  * @array: array to sort
  * @size: size of the array
  *
  * Return: void
  */
-void radix_sort(int *array, size_t size)
+void bitonic_sort(int *array, size_t size)
 {
-	unsigned int i, sort = 1;
-
 	if (array == NULL || size < 2)
 		return;
-	for (i = 1; sort == 1; i++)
-	{
-		sort = count_sort(array, size, i);
-		print_array(array, size);
-	}
+	bit_sort(1, array, size, size);
 }
